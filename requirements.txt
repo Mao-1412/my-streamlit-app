@@ -4,3 +4,4 @@ pandas
 numpy
 streamlit
 python-pptx
+openai
