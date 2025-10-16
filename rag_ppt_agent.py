@@ -15,7 +15,7 @@ import streamlit as st
 import openai
 
 # --- LangChain追加 ---
-from langchain.embeddings import OpenAIEmbeddings  # ← 修正
+from langchain_openai.embeddings import OpenAIEmbeddings
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain.vectorstores.faiss import FAISS
 from langchain.docstore.document import Document
@@ -592,6 +592,7 @@ if st.button("ブロック修正＆再生成"):
                     f,
                     file_name=os.path.basename(ppt_file)
                 )
+
 
 
 
