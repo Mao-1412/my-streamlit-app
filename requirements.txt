@@ -1,4 +1,4 @@
-langchain-openai
+langchain
 faiss-cpu
 openai
 python-pptx
@@ -7,3 +7,4 @@ seaborn
 pandas
 numpy
 streamlit
+
