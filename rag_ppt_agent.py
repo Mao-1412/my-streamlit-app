@@ -57,25 +57,31 @@ sns.set(font='MS Gothic')
 
 
 # -----------------------
-# データ読み込み
+# データ読み込み（openpyxl対応版）
 # -----------------------
 @st.cache_data
 def load_data():
     try:
-        pos_df = pd.read_excel(os.path.join(DATA_PATH, "POSデータ.xlsx"))
-        delivery_df = pd.read_excel(os.path.join(DATA_PATH, "納品実績報告.xlsx"))
-        store_df = pd.read_excel(os.path.join(DATA_PATH, "店舗情報.xlsx"))
-        merch_df = pd.read_excel(os.path.join(DATA_PATH, "市場_POS実績比較.xlsx"))
-        market_df = pd.read_excel(os.path.join(DATA_PATH, "市場動向_商品政策.xlsx"))
-        store_display_df = pd.read_excel(os.path.join(DATA_PATH, "店だしデータ.xlsx"))
-        client_df = pd.read_excel(os.path.join(DATA_PATH, "得意先情報.xlsx"))
+        pos_df = pd.read_excel(os.path.join(DATA_PATH, "POSデータ.xlsx"), engine="openpyxl")
+        delivery_df = pd.read_excel(os.path.join(DATA_PATH, "納品実績報告.xlsx"), engine="openpyxl")
+        store_df = pd.read_excel(os.path.join(DATA_PATH, "店舗情報.xlsx"), engine="openpyxl")
+        merch_df = pd.read_excel(os.path.join(DATA_PATH, "市場_POS実績比較.xlsx"), engine="openpyxl")
+        market_df = pd.read_excel(os.path.join(DATA_PATH, "市場動向_商品政策.xlsx"), engine="openpyxl")
+        store_display_df = pd.read_excel(os.path.join(DATA_PATH, "店だしデータ.xlsx"), engine="openpyxl")
+        client_df = pd.read_excel(os.path.join(DATA_PATH, "得意先情報.xlsx"), engine="openpyxl")
         return pos_df, delivery_df, store_df, merch_df, market_df, store_display_df, client_df
     except FileNotFoundError as e:
         st.error(f"Excelファイルが見つかりません: {e}")
-        empty_df = pd.DataFrame()
-        return (empty_df,) * 7
+    except ImportError as e:
+        st.error(f"Excel読み込みに必要なライブラリが不足しています: {e}")
+    except Exception as e:
+        st.error(f"Excel読み込み中に予期せぬエラーが発生しました: {e}")
+    # 例外時は空のDataFrameを返す
+    empty_df = pd.DataFrame()
+    return (empty_df,) * 7
 
 pos_df, delivery_df, store_df, merch_df, market_df, store_display_df, client_df = load_data()
+
 
 # -----------------------
 # RAG構築部分
@@ -610,6 +616,7 @@ if st.button("ブロック修正＆再生成"):
                     f,
                     file_name=os.path.basename(ppt_file)
                 )
+
 
 
 
