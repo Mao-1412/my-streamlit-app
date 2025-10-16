@@ -231,24 +231,23 @@ def generate_summary_block(latest_blocks):
 # -----------------------
 # PPT用フォント設定関数
 # -----------------------
-# -----------------------
-# PPT用フォント設定関数（安全版）
-# -----------------------
 from pptx.util import Pt
 from pptx.dml.color import RGBColor
+from pptx.oxml.ns import qn
 
-def set_font_for_text_frame(tf, font_name="Meiryo UI", font_size_pt=14, font_color=(0,0,0)):
+def set_font_for_text_frame(tf, font_name="MS Gothic", font_size_pt=14, font_color=(0,0,0)):
     """
-    TextFrame 内の全段落・全ランにフォント設定
-    OxmlElement は使わず安全に設定
+    TextFrame 内の全段落・全ランに日本語フォント設定
+    Latin と East Asia の両方を指定して文字化け防止
     """
     for p in tf.paragraphs:
         for run in p.runs:
-            run.font.name = font_name
+            run.font.name = font_name           # Latin
             run.font.size = Pt(font_size_pt)
             run.font.color.rgb = RGBColor(*font_color)
-
-    # Optional: 段落レベルのデフォルト設定も
+            # East Asia フォント指定
+            rPr = run._r.get_or_add_rPr()
+            rPr.rFonts.set(qn('a:ea'), font_name)
     tf.word_wrap = True
 
 # -----------------------
@@ -671,6 +670,7 @@ if st.button("ブロック修正＆再生成"):
                     f,
                     file_name=os.path.basename(ppt_file)
                 )
+
 
 
 
