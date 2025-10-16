@@ -231,23 +231,25 @@ def generate_summary_block(latest_blocks):
 # -----------------------
 # PPT用フォント設定関数
 # -----------------------
-from pptx.oxml import OxmlElement
+# -----------------------
+# PPT用フォント設定関数（安全版）
+# -----------------------
+from pptx.util import Pt
+from pptx.dml.color import RGBColor
 
 def set_font_for_text_frame(tf, font_name="Meiryo UI", font_size_pt=14, font_color=(0,0,0)):
+    """
+    TextFrame 内の全段落・全ランにフォント設定
+    OxmlElement は使わず安全に設定
+    """
     for p in tf.paragraphs:
         for run in p.runs:
-            # rPrがない場合は作成
-            if run._element.rPr is None:
-                run._element.rPr = OxmlElement('a:rPr')
-
             run.font.name = font_name
             run.font.size = Pt(font_size_pt)
             run.font.color.rgb = RGBColor(*font_color)
 
-            # フォント設定
-            run._element.rPr.rFonts.set(qn('a:latin'), font_name)
-            run._element.rPr.rFonts.set(qn('a:ea'), font_name)
-            run._element.rPr.rFonts.set(qn('a:cs'), font_name)
+    # Optional: 段落レベルのデフォルト設定も
+    tf.word_wrap = True
 
 # -----------------------
 # GPT提案文 自動生成
@@ -669,6 +671,7 @@ if st.button("ブロック修正＆再生成"):
                     f,
                     file_name=os.path.basename(ppt_file)
                 )
+
 
 
 
