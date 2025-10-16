@@ -1,11 +1,23 @@
-langchain>=0.2.0
-langchain-community>=0.2.0
-faiss-cpu
-openai
-python-pptx
-matplotlib
-seaborn
-pandas
-numpy
-streamlit
-openpyxl
+# LangChain関連
+langchain==0.2.19
+langchain-community==0.2.19
+
+# OpenAI
+openai>=1.0.0
+tiktoken>=0.4.0
+
+# FAISS
+faiss-cpu>=1.7.4
+
+# PPT作成
+python-pptx>=0.6.21
+
+# データ分析・可視化
+pandas>=2.1.0
+numpy>=1.26.0
+matplotlib>=3.8.0
+seaborn>=0.12.2
+openpyxl>=3.1.2
+
+# Streamlit
+streamlit>=1.24.1
