@@ -15,7 +15,8 @@ import streamlit as st
 import openai
 
 # --- LangChain追加 ---
-from langchain_openai.embeddings import OpenAIEmbeddings
+# --- LangChain追加 ---
+from langchain.embeddings.openai import OpenAIEmbeddings
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain.vectorstores import FAISS
 from langchain.docstore.document import Document
@@ -23,6 +24,7 @@ from langchain.schema import AIMessage, HumanMessage
 from langchain.chat_models import ChatOpenAI
 
 # Streamlit キャッシュをクリア
+import streamlit as st
 st.cache_data.clear()
 st.cache_resource.clear()
 
