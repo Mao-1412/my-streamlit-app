@@ -2,6 +2,8 @@
 # LangChain + FAISS対応 完全版（修正版）
 # ======================
 import os
+print("Current working directory:", os.getcwd())
+print("Files in data folder:", os.listdir("data"))
 import re
 import textwrap
 import pandas as pd
@@ -594,6 +596,7 @@ if st.button("ブロック修正＆再生成"):
                     f,
                     file_name=os.path.basename(ppt_file)
                 )
+
 
 
 
