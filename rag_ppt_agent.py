@@ -234,31 +234,26 @@ from pptx.dml.color import RGBColor
 from pptx.oxml.ns import qn
 
 def set_font_for_text_frame(tf, font_name="Meiryo UI", font_size_pt=14, font_color=(0,0,0)):
+    """
+    text_frame の全段落・全 run に日本語フォントを適用
+    """
     if not hasattr(tf, "paragraphs"):
         return
 
     for p in tf.paragraphs:
+        # 段落に既存の run が無ければ新規追加
+        if not p.runs:
+            run = p.add_run()
+            run.text = p.text
+            p.text = ""
         for run in p.runs:
-            # _element が存在するかチェック
-            if not hasattr(run, "_element"):
-                continue
-            # get_or_add_rPr が存在するかチェック
-            get_rPr = getattr(run._element, "get_or_add_rPr", None)
-            if get_rPr is None:
-                continue
-            rPr = get_rPr()
-            if rPr is None:
-                continue
             try:
-                run.font.name = font_name
-                run._element.rPr.rFonts.set(qn('w:eastAsia'), font_name)
+                run.font.name = font_name                    # 英数字用
+                run._element.rPr.rFonts.set(qn('w:eastAsia'), font_name)  # 日本語用
                 run.font.size = Pt(font_size_pt)
                 run.font.color.rgb = RGBColor(*font_color)
             except Exception:
-                # 安全のため例外は無視して次へ
                 continue
-
-
 # -----------------------
 # GPT提案文 自動生成
 # -----------------------
@@ -679,6 +674,7 @@ if st.button("ブロック修正＆再生成"):
                     f,
                     file_name=os.path.basename(ppt_file)
                 )
+
 
 
 
