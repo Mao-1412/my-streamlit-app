@@ -28,6 +28,23 @@ from langchain.chat_models import ChatOpenAI
 st.cache_data.clear()
 st.cache_resource.clear()
 
+# BASE_PATHはCloudでもローカルでも共通に
+BASE_PATH = os.getcwd()  # 常にカレントディレクトリ
+DATA_PATH = os.path.join(BASE_PATH, "data")
+OUTPUT_PATH = os.path.join(BASE_PATH, "output")
+VECTOR_PATH = os.path.join(BASE_PATH, "vectorstore")
+
+# ディレクトリ作成（data以外）
+os.makedirs(OUTPUT_PATH, exist_ok=True)
+os.makedirs(VECTOR_PATH, exist_ok=True)
+
+# dataフォルダの存在確認
+if not os.path.exists(DATA_PATH):
+    st.error(f"データフォルダが存在しません: {DATA_PATH}")
+else:
+    print("Files in data folder:", os.listdir(DATA_PATH))
+
+
 # -----------------------
 # 設定（ローカル or Streamlit Cloud 自動判定）
 # -----------------------
@@ -609,6 +626,7 @@ if st.button("ブロック修正＆再生成"):
                     f,
                     file_name=os.path.basename(ppt_file)
                 )
+
 
 
 
