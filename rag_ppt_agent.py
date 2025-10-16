@@ -17,7 +17,7 @@ import openai
 # --- LangChain追加 ---
 from langchain_openai.embeddings import OpenAIEmbeddings
 from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain.vectorstores.faiss import FAISS
+from langchain.vectorstores import FAISS
 from langchain.docstore.document import Document
 from langchain.schema import AIMessage, HumanMessage
 from langchain.chat_models import ChatOpenAI
