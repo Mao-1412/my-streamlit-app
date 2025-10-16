@@ -5,6 +5,8 @@ numpy
 streamlit
 python-pptx
 openai
+chromadb
 langchain_openai
 langchain
+
 
