@@ -1,5 +1,5 @@
 # ======================
-# LangChain + FAISS対応 完全版（修正版）
+# LangChain + FAISS対応 完全版（Cloud対応版）
 # ======================
 import os
 import re
@@ -29,11 +29,8 @@ st.cache_resource.clear()
 # -----------------------
 # BASE_PATH設定（Cloud/ローカル共通）
 # -----------------------
-if "STREAMLIT_SERVER" in os.environ:
-    BASE_PATH = "."  # Streamlit Cloud 上
-else:
-    BASE_PATH = r"C:\rag_poc_2"  # ローカル環境
-
+# Streamlit Cloud では GitHub リポジトリ内の ./data を使用
+BASE_PATH = "."
 DATA_PATH = os.path.join(BASE_PATH, "data")
 OUTPUT_PATH = os.path.join(BASE_PATH, "output")
 VECTOR_PATH = os.path.join(BASE_PATH, "vectorstore")
@@ -75,12 +72,10 @@ def load_data():
         return pos_df, delivery_df, store_df, merch_df, market_df, store_display_df, client_df
     except FileNotFoundError as e:
         st.error(f"Excelファイルが見つかりません: {e}")
-        # 空のDataFrameを返して以降の処理で落ちないようにする
         empty_df = pd.DataFrame()
         return (empty_df,) * 7
 
 pos_df, delivery_df, store_df, merch_df, market_df, store_display_df, client_df = load_data()
-
 
 # -----------------------
 # RAG構築部分
@@ -615,6 +610,7 @@ if st.button("ブロック修正＆再生成"):
                     f,
                     file_name=os.path.basename(ppt_file)
                 )
+
 
 
 
