@@ -29,7 +29,6 @@ st.cache_resource.clear()
 # -----------------------
 # BASE_PATH設定（Cloud/ローカル共通）
 # -----------------------
-# Streamlit Cloud では GitHub リポジトリ内の ./data を使用
 BASE_PATH = "."
 DATA_PATH = os.path.join(BASE_PATH, "data")
 OUTPUT_PATH = os.path.join(BASE_PATH, "output")
@@ -48,11 +47,7 @@ else:
     print("Files in data folder:", data_files)
 
 # OpenAI APIキー
-api_key = st.secrets.get("OPENAI_API_KEY")
-if not api_key:
-    st.error("OpenAI APIキーが設定されていません。st.secrets に追加してください。")
-    st.stop()  # ここで処理を停止して後続のベクトルストア作成を防ぐ
-openai.api_key = api_key
+openai.api_key = st.secrets.get("OPENAI_API_KEY")
 
 # 日本語フォント設定
 from matplotlib import rcParams
@@ -64,14 +59,15 @@ sns.set(font='MS Gothic')
 # -----------------------
 @st.cache_resource
 def build_vectorstore():
-    # OpenAI APIキーが無ければ処理停止
     if not openai.api_key:
         return None
 
-    embeddings = OpenAIEmbeddings(
-        model="text-embedding-3-small",
-        openai_api_key=openai.api_key
-    )
+    try:
+        embeddings = OpenAIEmbeddings(
+            model="text-embedding-3-small",
+            openai_api_key=openai.api_key
+        )
+
         # 例: data フォルダ内の全txtをベクトル化
         texts = []
         for fname in data_files:
@@ -100,6 +96,7 @@ def build_vectorstore():
 
 vectorstore = build_vectorstore()
 
+
 # -----------------------
 # データ読み込み（openpyxl対応版）
 # -----------------------
@@ -120,11 +117,11 @@ def load_data():
         st.error(f"Excel読み込みに必要なライブラリが不足しています: {e}")
     except Exception as e:
         st.error(f"Excel読み込み中に予期せぬエラーが発生しました: {e}")
-    # 例外時は空のDataFrameを返す
     empty_df = pd.DataFrame()
     return (empty_df,) * 7
 
 pos_df, delivery_df, store_df, merch_df, market_df, store_display_df, client_df = load_data()
+
 
 
 # -----------------------
@@ -660,6 +657,7 @@ if st.button("ブロック修正＆再生成"):
                     f,
                     file_name=os.path.basename(ppt_file)
                 )
+
 
 
 
