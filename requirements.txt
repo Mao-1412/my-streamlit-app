@@ -1,7 +1,6 @@
-# LangChain 最新安定版
-langchain>=0.0.240
-faiss-cpu>=1.7.4
-openai>=1.0.0
+langchain-openai
+faiss-cpu
+openai
 python-pptx
 matplotlib
 seaborn
