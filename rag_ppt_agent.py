@@ -55,6 +55,49 @@ from matplotlib import rcParams
 rcParams['font.family'] = 'MS Gothic'
 sns.set(font='MS Gothic')
 
+# -----------------------
+# ベクトルストア作成
+# -----------------------
+@st.cache_resource
+def build_vectorstore():
+    # OpenAI APIキーを確認
+    api_key = openai.api_key
+    if not api_key:
+        st.error("OpenAI APIキーが設定されていません。st.secrets に追加してください。")
+        return None
+
+    try:
+        embeddings = OpenAIEmbeddings(
+            model="text-embedding-3-small",  # 最新推奨モデル
+            openai_api_key=api_key
+        )
+        # 例: data フォルダ内の全txtをベクトル化
+        texts = []
+        for fname in data_files:
+            if fname.endswith(".txt"):
+                path = os.path.join(DATA_PATH, fname)
+                with open(path, "r", encoding="utf-8") as f:
+                    texts.append(f.read())
+
+        if not texts:
+            st.warning("data フォルダにテキストデータがありません。")
+            return None
+
+        # 分割
+        splitter = RecursiveCharacterTextSplitter(chunk_size=500, chunk_overlap=50)
+        docs = splitter.create_documents(texts)
+
+        # FAISS に登録
+        vectorstore = FAISS.from_documents(docs, embeddings)
+        # 保存
+        vectorstore.save_local(VECTOR_PATH)
+        return vectorstore
+
+    except Exception as e:
+        st.error(f"ベクトルストア作成中にエラー: {e}")
+        return None
+
+vectorstore = build_vectorstore()
 
 # -----------------------
 # データ読み込み（openpyxl対応版）
@@ -616,6 +659,7 @@ if st.button("ブロック修正＆再生成"):
                     f,
                     file_name=os.path.basename(ppt_file)
                 )
+
 
 
 
