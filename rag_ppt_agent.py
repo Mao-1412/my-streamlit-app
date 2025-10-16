@@ -2,8 +2,6 @@
 # LangChain + FAISS対応 完全版（修正版）
 # ======================
 import os
-print("Current working directory:", os.getcwd())
-
 import re
 import textwrap
 import pandas as pd
@@ -28,8 +26,14 @@ from langchain.chat_models import ChatOpenAI
 st.cache_data.clear()
 st.cache_resource.clear()
 
-# BASE_PATHはCloudでもローカルでも共通に
-BASE_PATH = os.getcwd()  # 常にカレントディレクトリ
+# -----------------------
+# BASE_PATH設定（Cloud/ローカル共通）
+# -----------------------
+if "STREAMLIT_SERVER" in os.environ:
+    BASE_PATH = "."  # Streamlit Cloud 上
+else:
+    BASE_PATH = r"C:\rag_poc_2"  # ローカル環境
+
 DATA_PATH = os.path.join(BASE_PATH, "data")
 OUTPUT_PATH = os.path.join(BASE_PATH, "output")
 VECTOR_PATH = os.path.join(BASE_PATH, "vectorstore")
@@ -39,34 +43,12 @@ os.makedirs(OUTPUT_PATH, exist_ok=True)
 os.makedirs(VECTOR_PATH, exist_ok=True)
 
 # dataフォルダの存在確認
-if not os.path.exists(DATA_PATH):
+if not os.path.exists(DATA_PATH) or not os.path.isdir(DATA_PATH):
     st.error(f"データフォルダが存在しません: {DATA_PATH}")
     data_files = []
 else:
     data_files = os.listdir(DATA_PATH)
     print("Files in data folder:", data_files)
-
-# -----------------------
-# 設定（ローカル or Streamlit Cloud 自動判定）
-# -----------------------
-if "STREAMLIT_SERVER" in os.environ:
-    # Streamlit Cloud 上
-    BASE_PATH = "."
-else:
-    # ローカル環境
-    BASE_PATH = r"C:\rag_poc_2"
-
-DATA_PATH = os.path.join(BASE_PATH, "data")
-OUTPUT_PATH = os.path.join(BASE_PATH, "output")
-VECTOR_PATH = os.path.join(BASE_PATH, "vectorstore")
-
-# ディレクトリ作成
-os.makedirs(OUTPUT_PATH, exist_ok=True)
-os.makedirs(VECTOR_PATH, exist_ok=True)
-
-# デバッグ用
-print("DATA_PATH:", DATA_PATH)
-print("Files in data folder:", os.listdir(DATA_PATH))
 
 # OpenAI APIキー
 openai.api_key = st.secrets.get("OPENAI_API_KEY")
@@ -77,22 +59,28 @@ rcParams['font.family'] = 'MS Gothic'
 sns.set(font='MS Gothic')
 
 
-
 # -----------------------
 # データ読み込み
 # -----------------------
 @st.cache_data
 def load_data():
-    pos_df = pd.read_excel(os.path.join(DATA_PATH, "POSデータ.xlsx"))
-    delivery_df = pd.read_excel(os.path.join(DATA_PATH, "納品実績報告.xlsx"))
-    store_df = pd.read_excel(os.path.join(DATA_PATH, "店舗情報.xlsx"))
-    merch_df = pd.read_excel(os.path.join(DATA_PATH, "市場_POS実績比較.xlsx"))
-    market_df = pd.read_excel(os.path.join(DATA_PATH, "市場動向_商品政策.xlsx"))
-    store_display_df = pd.read_excel(os.path.join(DATA_PATH, "店だしデータ.xlsx"))
-    client_df = pd.read_excel(os.path.join(DATA_PATH, "得意先情報.xlsx"))
-    return pos_df, delivery_df, store_df, merch_df, market_df, store_display_df, client_df
+    try:
+        pos_df = pd.read_excel(os.path.join(DATA_PATH, "POSデータ.xlsx"))
+        delivery_df = pd.read_excel(os.path.join(DATA_PATH, "納品実績報告.xlsx"))
+        store_df = pd.read_excel(os.path.join(DATA_PATH, "店舗情報.xlsx"))
+        merch_df = pd.read_excel(os.path.join(DATA_PATH, "市場_POS実績比較.xlsx"))
+        market_df = pd.read_excel(os.path.join(DATA_PATH, "市場動向_商品政策.xlsx"))
+        store_display_df = pd.read_excel(os.path.join(DATA_PATH, "店だしデータ.xlsx"))
+        client_df = pd.read_excel(os.path.join(DATA_PATH, "得意先情報.xlsx"))
+        return pos_df, delivery_df, store_df, merch_df, market_df, store_display_df, client_df
+    except FileNotFoundError as e:
+        st.error(f"Excelファイルが見つかりません: {e}")
+        # 空のDataFrameを返して以降の処理で落ちないようにする
+        empty_df = pd.DataFrame()
+        return (empty_df,) * 7
 
 pos_df, delivery_df, store_df, merch_df, market_df, store_display_df, client_df = load_data()
+
 
 # -----------------------
 # RAG構築部分
@@ -627,6 +615,7 @@ if st.button("ブロック修正＆再生成"):
                     f,
                     file_name=os.path.basename(ppt_file)
                 )
+
 
 
 
