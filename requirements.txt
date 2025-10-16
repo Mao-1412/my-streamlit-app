@@ -1,9 +1,9 @@
+langchain>=0.0.200
+chromadb
+openai
+python-pptx
 matplotlib
 seaborn
 pandas
 numpy
 streamlit
-python-pptx
-openai
-chromadb
-langchain>=0.0.200
