@@ -1,5 +1,5 @@
 # ======================
-# LangChain + FAISS対応 完全版（Cloud対応版）
+# LangChain + FAISS対応 完全版（Cloud対応版・整理版）
 # ======================
 import os
 import re
@@ -20,7 +20,7 @@ from langchain.embeddings.openai import OpenAIEmbeddings
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain.vectorstores import FAISS
 from langchain.docstore.document import Document
-from langchain.schema import AIMessage, HumanMessage
+from langchain.schema import HumanMessage
 from langchain.chat_models import ChatOpenAI
 
 # Streamlit キャッシュクリア
@@ -106,7 +106,7 @@ def load_data():
 pos_df, delivery_df, store_df, merch_df, market_df, store_display_df, client_df = load_data()
 
 # -----------------------
-# FAISSベクトルストア作成（RAG用・Excel対応）
+# FAISSベクトルストア作成（Excel対応）
 # -----------------------
 @st.cache_resource
 def build_vectorstore_excel():
@@ -159,7 +159,9 @@ def refine_text_with_gpt(original_text, instruction):
     try:
         llm = ChatOpenAI(model="gpt-4o-mini", temperature=0)
         response = llm.invoke([HumanMessage(content=prompt)])
-        return str(response.content).strip()
+        refined_text = str(response.content).strip()
+        refined_text = re.sub(r'^(修正後の文章:|修正された文章:)\s*', '', refined_text)
+        return refined_text
     except Exception as e:
         st.error(f"RAG修正に失敗: {e}")
         return original_text
@@ -185,69 +187,56 @@ def set_font_for_text_frame(tf, font_name="Meiryo UI", font_size_pt=14, font_col
                 continue
 
 # -----------------------
-# GPT提案文 自動生成
+# テキストのブロック統合
 # -----------------------
-def generate_gpt_proposal(client_name):
-    prompt = f"""
-    あなたはプロの営業コンサルタントです。
-    得意先「{client_name}」に向けて、提案資料に掲載する自然文の提案内容を作成してください。
-    トピック構成は以下の4つを含めてください。
-    1. 新商品・新施策の提案
-    2. 販促・デジタルマーケティング戦略
-    3. オペレーション改善案
-    4. 今後の成長方向性
-    """
-    try:
-        response = openai.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=[{"role": "user", "content": prompt}],
-        )
-        return response.choices[0].message.content.strip()
-    except Exception as e:
-        st.error(f"提案文生成に失敗しました: {e}")
-        return "提案文の自動生成に失敗しました。"
-
-# -----------------------
-# セッション初期化
-# -----------------------
-if 'proposal_blocks' not in st.session_state:
-    st.session_state['proposal_blocks'] = {}
-
-if 'auto_generated_text' not in st.session_state:
-    st.session_state['auto_generated_text'] = {}
-
-def fix_proposal_block(block_key, auto_generated_text, instruction):
-    """
-    GPTにブロック文章を修正させる。
-    文頭にブロック名は付けず、merge時に付与する
-    """
-    current_text = st.session_state['proposal_blocks'].get(block_key, auto_generated_text.get(block_key, ""))
-
-    refined_text = refine_text_with_gpt(current_text, instruction)
-    
-    if refined_text:
-        refined_text = refined_text.strip()
-        # ここで「修正された文章:」を削除
-        refined_text = re.sub(r'^(修正後の文章:|修正された文章:)\s*', '', refined_text)
-        st.session_state['proposal_blocks'][block_key] = refined_text
-
-    return refined_text
-
-
-def merge_blocks_with_session(auto_generated_text):
+def merge_blocks_with_session(session_blocks):
     block_order = ["【販売数量分析】", "【商品提案】", "【在庫管理】", "【総括】"]
     final_lines = []
     for key in block_order:
-        text = st.session_state.get('proposal_blocks', {}).get(key) or auto_generated_text.get(key)
+        text = session_blocks.get(key)
         if text:
-            # 「修正後の文章:」を削除
-            text = re.sub(r'^修正後の文章:\s*', '', text)
-            # ブロック名が含まれていない場合のみ追加
-            if not text.startswith(key):
-                final_lines.append(f"{key}\n{text.strip()}")
-            else:
-                final_lines.append(text.strip())
+            final_lines.append(f"{key}\n{text.strip()}")
     return "\n\n".join(final_lines)
+
+# -----------------------
+# PPT用テキスト整形
+# -----------------------
+def preprocess_proposal_text(text):
+    text = re.sub(r'[\r\v]+', '', text)
+    text = re.sub(r'】(?!\n)', '】\n', text)
+    lines = []
+    for part in text.split("\n"):
+        part = part.strip()
+        if part:
+            lines.extend(textwrap.wrap(part, width=42))
+    return lines
+
+# -----------------------
+# PPT生成用スライド追加
+# -----------------------
+def add_slide(prs, title, contents=None, img_bytes=None, is_proposal=False):
+    slide = prs.slides.add_slide(prs.slide_layouts[5])
+    try:
+        slide.shapes.title.text = title
+        set_font_for_text_frame(slide.shapes.title.text_frame, font_name="Meiryo UI", font_size_pt=18)
+    except Exception:
+        pass
+
+    if contents:
+        left, top, width, height = Inches(0.5), Inches(1.5), Inches(9), Inches(5)
+        textbox = slide.shapes.add_textbox(left, top, width, height)
+        tf = textbox.text_frame
+        tf.clear()
+        for content in contents:
+            p = tf.add_paragraph()
+            p.text = content
+            set_font_for_text_frame(tf, font_name="Meiryo UI", font_size_pt=14 if is_proposal else 16)
+
+    if img_bytes:
+        left, top = Inches(0.5), Inches(1.5)
+        slide.shapes.add_picture(img_bytes, left, top, width=Inches(9), height=Inches(5))
+    return slide
+
 
 # -----------------------
 # 売上チャート作成
@@ -604,6 +593,7 @@ if st.button("ブロック修正＆再生成"):
                     f,
                     file_name=os.path.basename(ppt_file)
                 )
+
 
 
 
