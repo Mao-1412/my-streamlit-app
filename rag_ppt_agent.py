@@ -238,18 +238,24 @@ from pptx.oxml.ns import qn
 def set_font_for_text_frame(tf, font_name="MS Gothic", font_size_pt=14, font_color=(0,0,0)):
     """
     TextFrame 内の全段落・全ランに日本語フォント設定
-    Latin と East Asia の両方を指定して文字化け防止
+    Latin と East Asia の両方を指定（失敗しても無視）
     """
     for p in tf.paragraphs:
         for run in p.runs:
-            run.font.name = font_name           # Latin
-            run.font.size = Pt(font_size_pt)
-            run.font.color.rgb = RGBColor(*font_color)
-            # East Asia フォント指定
-            rPr = run._r.get_or_add_rPr()
-            rPr.rFonts.set(qn('a:ea'), font_name)
+            try:
+                run.font.name = font_name           # Latin
+                run.font.size = Pt(font_size_pt)
+                run.font.color.rgb = RGBColor(*font_color)
+                
+                # East Asia フォント指定（失敗したら無視）
+                rPr = run._r.get_or_add_rPr()
+                rFonts = rPr.rFonts
+                if rFonts is not None:
+                    rFonts.set(qn('a:ea'), font_name)
+            except Exception:
+                # 環境によっては rFonts が None になる場合がある
+                pass
     tf.word_wrap = True
-
 # -----------------------
 # GPT提案文 自動生成
 # -----------------------
@@ -670,6 +676,7 @@ if st.button("ブロック修正＆再生成"):
                     f,
                     file_name=os.path.basename(ppt_file)
                 )
+
 
 
 
