@@ -1,0 +1,10 @@
+matplotlib
+seaborn
+pandas
+numpy
+streamlit
+python-pptx
+openai
+chromadb
+langchain_openai
+langchain>=0.0.200
