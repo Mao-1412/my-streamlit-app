@@ -229,19 +229,20 @@ def generate_summary_block(latest_blocks):
 # -----------------------
 # PPT用フォント設定関数
 # -----------------------
+from pptx.oxml.ns import qn
+
 def set_font_for_text_frame(tf, font_name="Meiryo UI", font_size_pt=14, font_color=(0,0,0)):
-    """
-    pptx の TextFrame または Paragraph に対してフォント設定を統一する
-    """
     if hasattr(tf, "paragraphs"):
         for p in tf.paragraphs:
             for run in p.runs:
                 run.font.name = font_name
+                run._element.rPr.rFonts.set(qn('w:eastAsia'), font_name)
                 run.font.size = Pt(font_size_pt)
                 run.font.color.rgb = RGBColor(*font_color)
     else:
         for run in tf.runs:
             run.font.name = font_name
+            run._element.rPr.rFonts.set(qn('w:eastAsia'), font_name)
             run.font.size = Pt(font_size_pt)
             run.font.color.rgb = RGBColor(*font_color)
 
@@ -665,6 +666,7 @@ if st.button("ブロック修正＆再生成"):
                     f,
                     file_name=os.path.basename(ppt_file)
                 )
+
 
 
 
