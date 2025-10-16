@@ -79,7 +79,7 @@ def build_vectorstore():
 
         if not texts:
             st.warning("data フォルダにテキストデータがありません。ベクトルストア作成をスキップします。")
-            return None  # ← ここでFAISS呼び出しを完全にスキップ
+            return None  # ← FAISS 呼び出しを完全にスキップ
 
         # テキスト分割
         splitter = RecursiveCharacterTextSplitter(chunk_size=500, chunk_overlap=50)
@@ -93,6 +93,7 @@ def build_vectorstore():
     except Exception as e:
         st.error(f"ベクトルストア作成中にエラー: {e}")
         return None
+
 
 vectorstore = build_vectorstore()
 # -----------------------
@@ -655,6 +656,7 @@ if st.button("ブロック修正＆再生成"):
                     f,
                     file_name=os.path.basename(ppt_file)
                 )
+
 
 
 
