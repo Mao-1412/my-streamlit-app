@@ -48,7 +48,11 @@ else:
     print("Files in data folder:", data_files)
 
 # OpenAI APIキー
-openai.api_key = st.secrets.get("OPENAI_API_KEY")
+api_key = st.secrets.get("OPENAI_API_KEY")
+if not api_key:
+    st.error("OpenAI APIキーが設定されていません。st.secrets に追加してください。")
+    st.stop()  # ここで処理を停止して後続のベクトルストア作成を防ぐ
+openai.api_key = api_key
 
 # 日本語フォント設定
 from matplotlib import rcParams
@@ -60,17 +64,14 @@ sns.set(font='MS Gothic')
 # -----------------------
 @st.cache_resource
 def build_vectorstore():
-    # OpenAI APIキーを確認
-    api_key = openai.api_key
-    if not api_key:
-        st.error("OpenAI APIキーが設定されていません。st.secrets に追加してください。")
+    # OpenAI APIキーが無ければ処理停止
+    if not openai.api_key:
         return None
 
-    try:
-        embeddings = OpenAIEmbeddings(
-            model="text-embedding-3-small",  # 最新推奨モデル
-            openai_api_key=api_key
-        )
+    embeddings = OpenAIEmbeddings(
+        model="text-embedding-3-small",
+        openai_api_key=openai.api_key
+    )
         # 例: data フォルダ内の全txtをベクトル化
         texts = []
         for fname in data_files:
@@ -659,6 +660,7 @@ if st.button("ブロック修正＆再生成"):
                     f,
                     file_name=os.path.basename(ppt_file)
                 )
+
 
 
 
