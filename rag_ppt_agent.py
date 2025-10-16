@@ -77,7 +77,7 @@ def build_vectorstore():
     docs = text_splitter.split_documents(all_texts)
 
     embeddings = OpenAIEmbeddings(model="text-embedding-3-small", openai_api_key=openai.api_key)
-    vectordb = Chroma.from_documents(docs, embedding=embeddings, persist_directory=VECTOR_PATH)
+    vectordb = FAISS.from_documents(docs, embedding=embeddings, persist_directory=VECTOR_PATH)
     vectordb.persist()
     return vectordb
 
@@ -587,6 +587,7 @@ if st.button("ブロック修正＆再生成"):
                     f,
                     file_name=os.path.basename(ppt_file)
                 )
+
 
 
 
