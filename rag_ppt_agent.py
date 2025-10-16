@@ -150,8 +150,6 @@ def build_vectorstore():
     vectordb.persist()
     return vectordb
 
-vectorstore = build_vectorstore()
-
 # -----------------------
 # GPT修正関数（RAG対応）
 # -----------------------
@@ -656,6 +654,7 @@ if st.button("ブロック修正＆再生成"):
                     f,
                     file_name=os.path.basename(ppt_file)
                 )
+
 
 
 
