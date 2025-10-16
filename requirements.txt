@@ -7,6 +7,7 @@ python-pptx
 openai
 chromadb
 langchain_openai
-langchain
+langchain>=0.0.200
+
 
 
