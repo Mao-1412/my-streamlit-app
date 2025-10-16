@@ -3,7 +3,7 @@
 # ======================
 import os
 print("Current working directory:", os.getcwd())
-print("Files in data folder:", os.listdir("data"))
+
 import re
 import textwrap
 import pandas as pd
@@ -17,7 +17,6 @@ import streamlit as st
 import openai
 
 # --- LangChain追加 ---
-# --- LangChain追加 ---
 from langchain.embeddings.openai import OpenAIEmbeddings
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain.vectorstores import FAISS
@@ -26,25 +25,39 @@ from langchain.schema import AIMessage, HumanMessage
 from langchain.chat_models import ChatOpenAI
 
 # Streamlit キャッシュをクリア
-import streamlit as st
 st.cache_data.clear()
 st.cache_resource.clear()
 
 # -----------------------
-# 設定
+# 設定（ローカル or Streamlit Cloud 自動判定）
 # -----------------------
-BASE_PATH = r"C:\rag_poc_2"
+if "STREAMLIT_SERVER" in os.environ:
+    # Streamlit Cloud 上
+    BASE_PATH = "."
+else:
+    # ローカル環境
+    BASE_PATH = r"C:\rag_poc_2"
+
 DATA_PATH = os.path.join(BASE_PATH, "data")
 OUTPUT_PATH = os.path.join(BASE_PATH, "output")
 VECTOR_PATH = os.path.join(BASE_PATH, "vectorstore")
+
+# ディレクトリ作成
 os.makedirs(OUTPUT_PATH, exist_ok=True)
 os.makedirs(VECTOR_PATH, exist_ok=True)
 
+# デバッグ用
+print("DATA_PATH:", DATA_PATH)
+print("Files in data folder:", os.listdir(DATA_PATH))
+
+# OpenAI APIキー
 openai.api_key = st.secrets.get("OPENAI_API_KEY")
 
+# 日本語フォント設定
 from matplotlib import rcParams
 rcParams['font.family'] = 'MS Gothic'
 sns.set(font='MS Gothic')
+
 
 
 # -----------------------
@@ -596,6 +609,7 @@ if st.button("ブロック修正＆再生成"):
                     f,
                     file_name=os.path.basename(ppt_file)
                 )
+
 
 
 
