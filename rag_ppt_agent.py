@@ -1,5 +1,5 @@
 # ======================
-# LangChain + FAISS対応 完全版
+# LangChain + FAISS対応 完全版（修正版）
 # ======================
 import os
 import re
@@ -15,19 +15,16 @@ import streamlit as st
 import openai
 
 # --- LangChain追加 ---
-from langchain.embeddings.openai import OpenAIEmbeddings
+from langchain.embeddings import OpenAIEmbeddings  # ← 修正
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain.vectorstores.faiss import FAISS
 from langchain.docstore.document import Document
 from langchain.schema import AIMessage, HumanMessage
 from langchain.chat_models import ChatOpenAI
 
-import streamlit as st
-
 # Streamlit キャッシュをクリア
 st.cache_data.clear()
 st.cache_resource.clear()
-
 
 # -----------------------
 # 設定
@@ -44,6 +41,7 @@ openai.api_key = st.secrets.get("OPENAI_API_KEY")
 from matplotlib import rcParams
 rcParams['font.family'] = 'MS Gothic'
 sns.set(font='MS Gothic')
+
 
 # -----------------------
 # データ読み込み
@@ -594,6 +592,7 @@ if st.button("ブロック修正＆再生成"):
                     f,
                     file_name=os.path.basename(ppt_file)
                 )
+
 
 
 
