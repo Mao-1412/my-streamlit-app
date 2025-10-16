@@ -60,6 +60,7 @@ sns.set(font='MS Gothic')
 @st.cache_resource
 def build_vectorstore():
     if not openai.api_key:
+        st.error("OpenAI APIキーが設定されていません。")
         return None
 
     try:
@@ -78,9 +79,9 @@ def build_vectorstore():
 
         if not texts:
             st.warning("data フォルダにテキストデータがありません。ベクトルストア作成をスキップします。")
-            return None  # 空の場合はスキップ
+            return None  # ← ここでFAISS呼び出しを完全にスキップ
 
-        # 分割
+        # テキスト分割
         splitter = RecursiveCharacterTextSplitter(chunk_size=500, chunk_overlap=50)
         docs = splitter.create_documents(texts)
 
@@ -94,9 +95,6 @@ def build_vectorstore():
         return None
 
 vectorstore = build_vectorstore()
-
-
-
 # -----------------------
 # データ読み込み（openpyxl対応版）
 # -----------------------
@@ -657,6 +655,7 @@ if st.button("ブロック修正＆再生成"):
                     f,
                     file_name=os.path.basename(ppt_file)
                 )
+
 
 
 
