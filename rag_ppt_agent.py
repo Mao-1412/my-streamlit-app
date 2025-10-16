@@ -1,5 +1,5 @@
 # ======================
-# LangChain + FAISS対応 完全版（Cloud対応版・整理版）
+# LangChain + FAISS対応 完全版（Cloud対応版）
 # ======================
 import os
 import re
@@ -10,7 +10,6 @@ import seaborn as sns
 from pptx import Presentation
 from pptx.util import Inches, Pt
 from pptx.dml.color import RGBColor
-from pptx.oxml.ns import qn
 from io import BytesIO
 import streamlit as st
 import openai
@@ -20,10 +19,10 @@ from langchain.embeddings.openai import OpenAIEmbeddings
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain.vectorstores import FAISS
 from langchain.docstore.document import Document
-from langchain.schema import HumanMessage
+from langchain.schema import AIMessage, HumanMessage
 from langchain.chat_models import ChatOpenAI
 
-# Streamlit キャッシュクリア
+# Streamlit キャッシュをクリア
 st.cache_data.clear()
 st.cache_resource.clear()
 
@@ -35,9 +34,11 @@ DATA_PATH = os.path.join(BASE_PATH, "data")
 OUTPUT_PATH = os.path.join(BASE_PATH, "output")
 VECTOR_PATH = os.path.join(BASE_PATH, "vectorstore")
 
+# ディレクトリ作成（data以外）
 os.makedirs(OUTPUT_PATH, exist_ok=True)
 os.makedirs(VECTOR_PATH, exist_ok=True)
 
+# dataフォルダの存在確認
 if not os.path.exists(DATA_PATH) or not os.path.isdir(DATA_PATH):
     st.error(f"データフォルダが存在しません: {DATA_PATH}")
     data_files = []
@@ -48,44 +49,55 @@ else:
 # OpenAI APIキー
 openai.api_key = st.secrets.get("OPENAI_API_KEY")
 
-# 日本語フォント設定（matplotlib/Seaborn）
+# 日本語フォント設定
 from matplotlib import rcParams
 rcParams['font.family'] = 'MS Gothic'
 sns.set(font='MS Gothic')
 
 # -----------------------
-# FAISSベクトルストア作成（txt対応）
+# ベクトルストア作成
 # -----------------------
 @st.cache_resource
-def build_vectorstore_txt():
+def build_vectorstore():
     if not openai.api_key:
         st.error("OpenAI APIキーが設定されていません。")
         return None
 
-    texts = []
-    for fname in data_files:
-        if fname.endswith(".txt"):
-            path = os.path.join(DATA_PATH, fname)
-            try:
-                with open(path, "r", encoding="utf-8-sig") as f:
-                    texts.append(f.read())
-            except Exception as e:
-                st.warning(f"テキスト読み込み失敗: {fname}, {e}")
+    try:
+        embeddings = OpenAIEmbeddings(
+            model="text-embedding-3-small",
+            openai_api_key=openai.api_key
+        )
 
-    if not texts:
-        st.warning("dataフォルダにテキストデータがありません。FAISS作成スキップ。")
+        # dataフォルダ内の全txtを収集
+        texts = []
+        for fname in data_files:
+            if fname.endswith(".txt"):
+                path = os.path.join(DATA_PATH, fname)
+                with open(path, "r", encoding="utf-8") as f:
+                    texts.append(f.read())
+
+        if not texts:
+            st.warning("data フォルダにテキストデータがありません。ベクトルストア作成をスキップします。")
+            return None  # ← FAISS 呼び出しを完全にスキップ
+
+        # テキスト分割
+        splitter = RecursiveCharacterTextSplitter(chunk_size=500, chunk_overlap=50)
+        docs = splitter.create_documents(texts)
+
+        # FAISS に登録
+        vectorstore = FAISS.from_documents(docs, embeddings)
+        vectorstore.save_local(VECTOR_PATH)
+        return vectorstore
+
+    except Exception as e:
+        st.error(f"ベクトルストア作成中にエラー: {e}")
         return None
 
-    splitter = RecursiveCharacterTextSplitter(chunk_size=500, chunk_overlap=50)
-    docs = splitter.create_documents(texts)
 
-    embeddings = OpenAIEmbeddings(model="text-embedding-3-small", openai_api_key=openai.api_key)
-    vectorstore = FAISS.from_documents(docs, embeddings)
-    vectorstore.save_local(VECTOR_PATH)
-    return vectorstore
-
+vectorstore = build_vectorstore()
 # -----------------------
-# Excelデータ読み込み
+# データ読み込み（openpyxl対応版）
 # -----------------------
 @st.cache_data
 def load_data():
@@ -98,19 +110,25 @@ def load_data():
         store_display_df = pd.read_excel(os.path.join(DATA_PATH, "店だしデータ.xlsx"), engine="openpyxl")
         client_df = pd.read_excel(os.path.join(DATA_PATH, "得意先情報.xlsx"), engine="openpyxl")
         return pos_df, delivery_df, store_df, merch_df, market_df, store_display_df, client_df
+    except FileNotFoundError as e:
+        st.error(f"Excelファイルが見つかりません: {e}")
+    except ImportError as e:
+        st.error(f"Excel読み込みに必要なライブラリが不足しています: {e}")
     except Exception as e:
-        st.error(f"Excel読み込み失敗: {e}")
-        empty_df = pd.DataFrame()
-        return (empty_df,) * 7
+        st.error(f"Excel読み込み中に予期せぬエラーが発生しました: {e}")
+    empty_df = pd.DataFrame()
+    return (empty_df,) * 7
 
 pos_df, delivery_df, store_df, merch_df, market_df, store_display_df, client_df = load_data()
 
+
+
 # -----------------------
-# FAISSベクトルストア作成（Excel対応）
+# RAG構築部分
 # -----------------------
 @st.cache_resource
-def build_vectorstore_excel():
-    all_docs = []
+def build_vectorstore():
+    all_texts = []
     for df_name, df in {
         "POS": pos_df,
         "納品": delivery_df,
@@ -121,122 +139,178 @@ def build_vectorstore_excel():
         "得意先": client_df
     }.items():
         text_data = df.to_csv(index=False)
-        all_docs.append(Document(page_content=text_data, metadata={"source": df_name}))
+        doc = Document(page_content=text_data, metadata={"source": df_name})
+        all_texts.append(doc)
 
-    splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=150)
-    docs = splitter.split_documents(all_docs)
+    text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=150)
+    docs = text_splitter.split_documents(all_texts)
 
     embeddings = OpenAIEmbeddings(model="text-embedding-3-small", openai_api_key=openai.api_key)
-    vectordb = FAISS.from_documents(docs, embeddings)
-    vectordb.save_local(VECTOR_PATH)
+    vectordb = FAISS.from_documents(docs, embedding=embeddings, persist_directory=VECTOR_PATH)
+    vectordb.persist()
     return vectordb
 
-vectorstore = build_vectorstore_excel()
-
 # -----------------------
-# GPTによる文章修正（RAG対応）
+# GPT修正関数（RAG対応）
 # -----------------------
 def refine_text_with_gpt(original_text, instruction):
-    if vectorstore is None:
-        return original_text
-
-    retriever = vectorstore.as_retriever(search_kwargs={"k":3})
+    retriever = vectorstore.as_retriever(search_kwargs={"k": 3})
     related_docs = retriever.get_relevant_documents(instruction)
-    context_text = "\n".join([str(d.page_content[:500]) for d in related_docs])
+    context_text = "\n".join([d.page_content[:500] for d in related_docs])
 
     prompt = f"""
-以下の関連データを参考に、次の文章を指示に従って修正してください。
+    以下の関連データを参考に、次の文章を指示に従って修正してください。
 
-【関連データ】
-{context_text}
+    【関連データ】
+    {context_text}
 
-【修正対象文章】
-{original_text}
+    【修正対象文章】
+    {original_text}
 
-【修正指示】
-{instruction}
-"""
+    【修正指示】
+    {instruction}
+    """
+
     try:
         llm = ChatOpenAI(model="gpt-4o-mini", temperature=0)
         response = llm.invoke([HumanMessage(content=prompt)])
-        refined_text = str(response.content).strip()
-        refined_text = re.sub(r'^(修正後の文章:|修正された文章:)\s*', '', refined_text)
-        return refined_text
+        return response.content.strip()
     except Exception as e:
-        st.error(f"RAG修正に失敗: {e}")
+        st.error(f"RAG修正に失敗しました: {e}")
         return original_text
+
+# -----------------------
+# 総括生成関数（RAG対応・安全版）
+# -----------------------
+def generate_summary_block(latest_blocks):
+    """
+    latest_blocks: dict
+        各ブロック文章の最新状態を保持する辞書
+    """
+    text_to_summarize = "\n\n".join([
+        latest_blocks.get("【販売数量分析】", ""),
+        latest_blocks.get("【商品提案】", ""),
+        latest_blocks.get("【在庫管理】", "")
+    ])
+
+    if not any([latest_blocks.get(k) for k in ["【販売数量分析】","【商品提案】","【在庫管理】"]]):
+        return "総括内容がありません。"
+
+    # vectorstore が存在する場合のみRAG処理
+    if vectorstore is not None:
+        try:
+            retriever = vectorstore.as_retriever(search_kwargs={"k": 3})
+            related_docs = retriever.get_relevant_documents("営業提案の総括生成")
+            context_text = "\n".join([d.page_content[:500] for d in related_docs])
+        except Exception as e:
+            st.warning(f"RAG検索に失敗しました: {e}")
+            context_text = ""
+    else:
+        context_text = ""
+
+    prompt = f"""
+    以下の関連データを踏まえて、次の内容を200字程度で営業提案用の総括文にまとめてください。
+
+    【関連データ】
+    {context_text}
+
+    【要約対象】
+    {text_to_summarize}
+    """
+
+    try:
+        llm = ChatOpenAI(model="gpt-4o-mini", temperature=0)
+        response = llm.invoke([HumanMessage(content=prompt)])
+        return response.content.strip()
+    except Exception as e:
+        st.error(f"総括生成に失敗しました: {e}")
+        return "総括の自動生成に失敗しました。"
+
+
 
 # -----------------------
 # PPT用フォント設定関数
 # -----------------------
 def set_font_for_text_frame(tf, font_name="Meiryo UI", font_size_pt=14, font_color=(0,0,0)):
-    if not hasattr(tf, "paragraphs"):
-        return
-    for p in tf.paragraphs:
-        if not p.runs:
-            run = p.add_run()
-            run.text = p.text
-            p.text = ""
-        for run in p.runs:
-            try:
+    """
+    pptx の TextFrame または Paragraph に対してフォント設定を統一する
+    """
+    if hasattr(tf, "paragraphs"):
+        for p in tf.paragraphs:
+            for run in p.runs:
                 run.font.name = font_name
-                run._element.rPr.rFonts.set(qn('w:eastAsia'), font_name)
                 run.font.size = Pt(font_size_pt)
                 run.font.color.rgb = RGBColor(*font_color)
-            except Exception:
-                continue
+    else:
+        for run in tf.runs:
+            run.font.name = font_name
+            run.font.size = Pt(font_size_pt)
+            run.font.color.rgb = RGBColor(*font_color)
 
 # -----------------------
-# テキストのブロック統合
+# GPT提案文 自動生成
 # -----------------------
-def merge_blocks_with_session(session_blocks):
+def generate_gpt_proposal(client_name):
+    prompt = f"""
+    あなたはプロの営業コンサルタントです。
+    得意先「{client_name}」に向けて、提案資料に掲載する自然文の提案内容を作成してください。
+    トピック構成は以下の4つを含めてください。
+    1. 新商品・新施策の提案
+    2. 販促・デジタルマーケティング戦略
+    3. オペレーション改善案
+    4. 今後の成長方向性
+    """
+    try:
+        response = openai.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[{"role": "user", "content": prompt}],
+        )
+        return response.choices[0].message.content.strip()
+    except Exception as e:
+        st.error(f"提案文生成に失敗しました: {e}")
+        return "提案文の自動生成に失敗しました。"
+
+# -----------------------
+# セッション初期化
+# -----------------------
+if 'proposal_blocks' not in st.session_state:
+    st.session_state['proposal_blocks'] = {}
+
+if 'auto_generated_text' not in st.session_state:
+    st.session_state['auto_generated_text'] = {}
+
+def fix_proposal_block(block_key, auto_generated_text, instruction):
+    """
+    GPTにブロック文章を修正させる。
+    文頭にブロック名は付けず、merge時に付与する
+    """
+    current_text = st.session_state['proposal_blocks'].get(block_key, auto_generated_text.get(block_key, ""))
+
+    refined_text = refine_text_with_gpt(current_text, instruction)
+    
+    if refined_text:
+        refined_text = refined_text.strip()
+        # ここで「修正された文章:」を削除
+        refined_text = re.sub(r'^(修正後の文章:|修正された文章:)\s*', '', refined_text)
+        st.session_state['proposal_blocks'][block_key] = refined_text
+
+    return refined_text
+
+
+def merge_blocks_with_session(auto_generated_text):
     block_order = ["【販売数量分析】", "【商品提案】", "【在庫管理】", "【総括】"]
     final_lines = []
     for key in block_order:
-        text = session_blocks.get(key)
+        text = st.session_state.get('proposal_blocks', {}).get(key) or auto_generated_text.get(key)
         if text:
-            final_lines.append(f"{key}\n{text.strip()}")
+            # 「修正後の文章:」を削除
+            text = re.sub(r'^修正後の文章:\s*', '', text)
+            # ブロック名が含まれていない場合のみ追加
+            if not text.startswith(key):
+                final_lines.append(f"{key}\n{text.strip()}")
+            else:
+                final_lines.append(text.strip())
     return "\n\n".join(final_lines)
-
-# -----------------------
-# PPT用テキスト整形
-# -----------------------
-def preprocess_proposal_text(text):
-    text = re.sub(r'[\r\v]+', '', text)
-    text = re.sub(r'】(?!\n)', '】\n', text)
-    lines = []
-    for part in text.split("\n"):
-        part = part.strip()
-        if part:
-            lines.extend(textwrap.wrap(part, width=42))
-    return lines
-
-# -----------------------
-# PPT生成用スライド追加
-# -----------------------
-def add_slide(prs, title, contents=None, img_bytes=None, is_proposal=False):
-    slide = prs.slides.add_slide(prs.slide_layouts[5])
-    try:
-        slide.shapes.title.text = title
-        set_font_for_text_frame(slide.shapes.title.text_frame, font_name="Meiryo UI", font_size_pt=18)
-    except Exception:
-        pass
-
-    if contents:
-        left, top, width, height = Inches(0.5), Inches(1.5), Inches(9), Inches(5)
-        textbox = slide.shapes.add_textbox(left, top, width, height)
-        tf = textbox.text_frame
-        tf.clear()
-        for content in contents:
-            p = tf.add_paragraph()
-            p.text = content
-            set_font_for_text_frame(tf, font_name="Meiryo UI", font_size_pt=14 if is_proposal else 16)
-
-    if img_bytes:
-        left, top = Inches(0.5), Inches(1.5)
-        slide.shapes.add_picture(img_bytes, left, top, width=Inches(9), height=Inches(5))
-    return slide
-
 
 # -----------------------
 # 売上チャート作成
@@ -593,33 +667,4 @@ if st.button("ブロック修正＆再生成"):
                     f,
                     file_name=os.path.basename(ppt_file)
                 )
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
