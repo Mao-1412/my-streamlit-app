@@ -41,9 +41,10 @@ os.makedirs(VECTOR_PATH, exist_ok=True)
 # dataフォルダの存在確認
 if not os.path.exists(DATA_PATH):
     st.error(f"データフォルダが存在しません: {DATA_PATH}")
+    data_files = []
 else:
-    print("Files in data folder:", os.listdir(DATA_PATH))
-
+    data_files = os.listdir(DATA_PATH)
+    print("Files in data folder:", data_files)
 
 # -----------------------
 # 設定（ローカル or Streamlit Cloud 自動判定）
@@ -626,6 +627,7 @@ if st.button("ブロック修正＆再生成"):
                     f,
                     file_name=os.path.basename(ppt_file)
                 )
+
 
 
 
