@@ -180,13 +180,13 @@ def refine_text_with_gpt(original_text, instruction):
         return original_text
 
 # -----------------------
-# 総括生成関数（RAG対応）
+# 総括生成関数（RAG対応・安全版）
 # -----------------------
 def generate_summary_block(latest_blocks):
-    retriever = vectorstore.as_retriever(search_kwargs={"k": 3})
-    related_docs = retriever.get_relevant_documents("営業提案の総括生成")
-    context_text = "\n".join([d.page_content[:500] for d in related_docs])
-
+    """
+    latest_blocks: dict
+        各ブロック文章の最新状態を保持する辞書
+    """
     text_to_summarize = "\n\n".join([
         latest_blocks.get("【販売数量分析】", ""),
         latest_blocks.get("【商品提案】", ""),
@@ -195,6 +195,18 @@ def generate_summary_block(latest_blocks):
 
     if not any([latest_blocks.get(k) for k in ["【販売数量分析】","【商品提案】","【在庫管理】"]]):
         return "総括内容がありません。"
+
+    # vectorstore が存在する場合のみRAG処理
+    if vectorstore is not None:
+        try:
+            retriever = vectorstore.as_retriever(search_kwargs={"k": 3})
+            related_docs = retriever.get_relevant_documents("営業提案の総括生成")
+            context_text = "\n".join([d.page_content[:500] for d in related_docs])
+        except Exception as e:
+            st.warning(f"RAG検索に失敗しました: {e}")
+            context_text = ""
+    else:
+        context_text = ""
 
     prompt = f"""
     以下の関連データを踏まえて、次の内容を200字程度で営業提案用の総括文にまとめてください。
@@ -213,7 +225,6 @@ def generate_summary_block(latest_blocks):
     except Exception as e:
         st.error(f"総括生成に失敗しました: {e}")
         return "総括の自動生成に失敗しました。"
-
 
 # -----------------------
 # PPT用フォント設定関数
@@ -654,6 +665,7 @@ if st.button("ブロック修正＆再生成"):
                     f,
                     file_name=os.path.basename(ppt_file)
                 )
+
 
 
 
