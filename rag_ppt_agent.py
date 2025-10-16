@@ -68,7 +68,7 @@ def build_vectorstore():
             openai_api_key=openai.api_key
         )
 
-        # 例: data フォルダ内の全txtをベクトル化
+        # dataフォルダ内の全txtを収集
         texts = []
         for fname in data_files:
             if fname.endswith(".txt"):
@@ -77,8 +77,8 @@ def build_vectorstore():
                     texts.append(f.read())
 
         if not texts:
-            st.warning("data フォルダにテキストデータがありません。")
-            return None
+            st.warning("data フォルダにテキストデータがありません。ベクトルストア作成をスキップします。")
+            return None  # 空の場合はスキップ
 
         # 分割
         splitter = RecursiveCharacterTextSplitter(chunk_size=500, chunk_overlap=50)
@@ -86,7 +86,6 @@ def build_vectorstore():
 
         # FAISS に登録
         vectorstore = FAISS.from_documents(docs, embeddings)
-        # 保存
         vectorstore.save_local(VECTOR_PATH)
         return vectorstore
 
@@ -95,6 +94,7 @@ def build_vectorstore():
         return None
 
 vectorstore = build_vectorstore()
+
 
 
 # -----------------------
@@ -657,6 +657,7 @@ if st.button("ブロック修正＆再生成"):
                     f,
                     file_name=os.path.basename(ppt_file)
                 )
+
 
 
 
