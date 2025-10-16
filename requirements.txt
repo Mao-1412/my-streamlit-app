@@ -1,4 +1,4 @@
-langchain
+langchain==0.1.146
 faiss-cpu
 openai
 python-pptx
@@ -7,4 +7,5 @@ seaborn
 pandas
 numpy
 streamlit
+
 
