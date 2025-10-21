@@ -1,5 +1,5 @@
 # ======================
-# LangChain + FAISS対応 完全版（Cloud対応版）
+# LangChain + FAISS対応 完全版（Cloud対応版・v0 系対応）
 # ======================
 import os
 import re
@@ -15,15 +15,15 @@ import streamlit as st
 import openai
 
 # --- LangChain v0 系対応 ---
-from langchain import OpenAI
-from langchain import FAISS
-from langchain import Document
+from langchain.embeddings import OpenAIEmbeddings      # v0 系ではこのパス
 from langchain.text_splitter import CharacterTextSplitter
+from langchain.schema import Document                  # v0 系では schema モジュールにある
+from langchain.vectorstores import FAISS              # FAISS のインポートはこのまま
+from langchain.chat_models import ChatOpenAI          # GPT呼び出しはそのまま
 
 # Streamlit キャッシュをクリア
 st.cache_data.clear()
 st.cache_resource.clear()
-
 # -----------------------
 # BASE_PATH設定（Cloud/ローカル共通）
 # -----------------------
@@ -665,6 +665,7 @@ if st.button("ブロック修正＆再生成"):
                     f,
                     file_name=os.path.basename(ppt_file)
                 )
+
 
 
 
