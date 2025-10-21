@@ -1,3 +1,16 @@
+import os
+import re
+import textwrap
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+from pptx import Presentation
+from pptx.util import Inches, Pt
+from pptx.dml.color import RGBColor
+from io import BytesIO
+import streamlit as st
+import openai
+
 # -----------------------
 # 設定
 # -----------------------
@@ -522,3 +535,5 @@ if st.button("ブロック修正＆再生成"):
             st.success(f"{block_to_fix} ブロックを修正し、PPTを再生成しました。")
             with open(ppt_file, "rb") as f:
                 st.download_button("修正版PPTをダウンロード", f, file_name=os.path.basename(ppt_file))
+
+
