@@ -216,7 +216,7 @@ def generate_summary_block(latest_blocks):
     from langchain.schema import HumanMessage
     response = llm.generate([[HumanMessage(content=prompt)]])
     return response.generations[0][0].text.strip()
-except Exception as e:
+　　　except Exception as e:
     st.error(f"総括生成に失敗しました: {e}")
     return "総括の自動生成に失敗しました。"
 
@@ -258,7 +258,7 @@ def generate_gpt_proposal(client_name):
         messages=[{"role": "user", "content": prompt}],
     )
     return response.choices[0].message.content.strip()
-except Exception as e:
+　　　except Exception as e:
     st.error(f"提案文生成に失敗しました: {e}")
     return "提案文の自動生成に失敗しました。"
 
@@ -659,6 +659,7 @@ if st.button("ブロック修正＆再生成"):
                     f,
                     file_name=os.path.basename(ppt_file)
                 )
+
 
 
 
