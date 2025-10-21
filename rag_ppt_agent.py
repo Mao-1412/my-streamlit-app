@@ -16,11 +16,11 @@ import openai
 
 # --- LangChain追加 ---
 from langchain_openai import OpenAIEmbeddings
-from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain.vectorstores import FAISS
-from langchain.docstore.document import Document
-from langchain.schema import AIMessage, HumanMessage
-from langchain.chat_models import ChatOpenAI
+from langchain_text_splitter import RecursiveCharacterTextSplitter
+from langchain_vectorstores import FAISS
+from langchain_docstore.document import Document
+from langchain_schema import AIMessage, HumanMessage
+from langchain_chat_models import ChatOpenAI
 
 # Streamlit キャッシュをクリア
 st.cache_data.clear()
@@ -676,6 +676,7 @@ if st.button("ブロック修正＆再生成"):
                     f,
                     file_name=os.path.basename(ppt_file)
                 )
+
 
 
 
