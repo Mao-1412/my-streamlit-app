@@ -181,20 +181,15 @@ def refine_text_with_gpt(original_text, instruction):
 # 総括生成関数（RAG対応・安全版）
 # -----------------------
 def generate_summary_block(latest_blocks):
-    """
-    latest_blocks: dict
-        各ブロック文章の最新状態を保持する辞書
-    """
     text_to_summarize = "\n\n".join([
         latest_blocks.get("【販売数量分析】", ""),
         latest_blocks.get("【商品提案】", ""),
         latest_blocks.get("【在庫管理】", "")
     ])
-
+    
     if not any([latest_blocks.get(k) for k in ["【販売数量分析】","【商品提案】","【在庫管理】"]]):
         return "総括内容がありません。"
 
-    # vectorstore が存在する場合のみRAG処理
     if vectorstore is not None:
         try:
             retriever = vectorstore.as_retriever(search_kwargs={"k": 3})
@@ -217,14 +212,13 @@ def generate_summary_block(latest_blocks):
     """
 
     try:
-        llm = ChatOpenAI(model="gpt-4o-mini", temperature=0)
-        response = llm.invoke([HumanMessage(content=prompt)])
-        return response.content.strip()
+        llm = ChatOpenAI(model_name="gpt-4o-mini", temperature=0)
+        from langchain.schema import HumanMessage
+        response = llm.generate([[HumanMessage(content=prompt)]])
+        return response.generations[0][0].text.strip()
     except Exception as e:
         st.error(f"総括生成に失敗しました: {e}")
         return "総括の自動生成に失敗しました。"
-
-
 
 # -----------------------
 # PPT用フォント設定関数
@@ -665,6 +659,7 @@ if st.button("ブロック修正＆再生成"):
                     f,
                     file_name=os.path.basename(ppt_file)
                 )
+
 
 
 
