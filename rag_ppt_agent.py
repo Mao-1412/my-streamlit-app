@@ -187,17 +187,11 @@ def refine_text_with_gpt(original_text, instruction):
         st.error(f"RAG修正に失敗しました: {e}")
         return original_text
 # -----------------------
-# 総括生成関数（RAG対応・安全版・例外対応済み）
+# 総括生成関数（RAG対応・無料版対応）
 # -----------------------
 from langchain.chat_models import ChatOpenAI
 from langchain.schema import HumanMessage
 import streamlit as st
-
-# OpenAI エラーを安全に捕捉
-try:
-    from openai.error import OpenAIError
-except ImportError:
-    OpenAIError = Exception  # 万一古いバージョンなら汎用 Exception にフォールバック
 
 def generate_summary_block(latest_blocks):
     """
@@ -205,12 +199,14 @@ def generate_summary_block(latest_blocks):
     latest_blocks: dict
         各ブロック文章を保持する辞書
     """
+    # 要約対象の文章を結合
     text_to_summarize = "\n\n".join([
         latest_blocks.get("【販売数量分析】", ""),
         latest_blocks.get("【商品提案】", ""),
         latest_blocks.get("【在庫管理】", "")
     ])
     
+    # すべて空の場合は処理不要
     if not any([latest_blocks.get(k) for k in ["【販売数量分析】","【商品提案】","【在庫管理】"]]):
         return "総括内容がありません。"
 
@@ -239,17 +235,14 @@ def generate_summary_block(latest_blocks):
         llm = ChatOpenAI(model_name="gpt-4o-mini", temperature=0)
         # v0系では generate() が LLMResult を返す
         response = llm.generate([[HumanMessage(content=prompt)]])
-        # generations[0] は list になっているので [0].text で取得
         summary = response.generations[0][0].text.strip()
         return summary
 
-    except OpenAIError as e:
-        st.error(f"総括生成に失敗しました(OpenAIエラー): {e}")
+    except Exception as e:
+        # OpenAIError も含めてすべてここで捕捉
+        st.error(f"総括生成に失敗しました: {e}")
         return "総括の自動生成に失敗しました。"
 
-    except Exception as e:
-        st.error(f"総括生成に失敗しました(その他エラー): {e}")
-        return "総括の自動生成に失敗しました。"
 
 # -----------------------
 # PPT用フォント設定関数
@@ -691,6 +684,7 @@ if st.button("ブロック修正＆再生成"):
                     f,
                     file_name=os.path.basename(ppt_file)
                 )
+
 
 
 
