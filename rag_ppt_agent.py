@@ -253,15 +253,15 @@ def generate_gpt_proposal(client_name):
     3. オペレーション改善案
     4. 今後の成長方向性
     """
-try:
-    response = openai.chat.completions.create(
-        model="gpt-4o-mini",
-        messages=[{"role": "user", "content": prompt}],
-    )
-    return response.choices[0].message.content.strip()
-except Exception as e:
-    st.error(f"提案文生成に失敗しました: {e}")
-    return "提案文の自動生成に失敗しました。"
+    try:
+        response = openai.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[{"role": "user", "content": prompt}],
+        )
+        return response.choices[0].message.content.strip()
+    except Exception as e:
+        st.error(f"提案文生成に失敗しました: {e}")
+        return "提案文の自動生成に失敗しました。"
 
 
 # -----------------------
@@ -661,7 +661,6 @@ if st.button("ブロック修正＆再生成"):
                     f,
                     file_name=os.path.basename(ppt_file)
                 )
-
 
 
 
