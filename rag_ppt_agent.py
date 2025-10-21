@@ -12,27 +12,34 @@ from pptx.util import Inches, Pt
 from pptx.dml.color import RGBColor
 from io import BytesIO
 import streamlit as st
+
+# OpenAI
 import openai
 
+# OpenAI API エラーを安全に捕捉
+try:
+    from openai.error import OpenAIError
+except ImportError:
+    OpenAIError = Exception  # 古いバージョンでは汎用 Exception にフォールバック
+
 # --- LangChain v0 系対応 ---
-from langchain.embeddings import OpenAIEmbeddings      # v0 系ではこのパス
+from langchain.embeddings import OpenAIEmbeddings      # v0 系では embeddings モジュール
 from langchain.text_splitter import CharacterTextSplitter
 from langchain.schema import Document                  # v0 系では schema モジュールにある
-from langchain.vectorstores import FAISS              # FAISS のインポートはこのまま
-from langchain.chat_models import ChatOpenAI          # GPT呼び出しはそのまま
+from langchain.vectorstores import FAISS
+from langchain.chat_models import ChatOpenAI          # GPT呼び出し用
 
-# Streamlit キャッシュをクリア
+# Streamlit キャッシュをクリア（必要に応じて）
 st.cache_data.clear()
 st.cache_resource.clear()
-# -----------------------
+
 # BASE_PATH設定（Cloud/ローカル共通）
-# -----------------------
 BASE_PATH = "."
 DATA_PATH = os.path.join(BASE_PATH, "data")
 OUTPUT_PATH = os.path.join(BASE_PATH, "output")
 VECTOR_PATH = os.path.join(BASE_PATH, "vectorstore")
 
-# ディレクトリ作成（data以外）
+# ディレクトリ作成
 os.makedirs(OUTPUT_PATH, exist_ok=True)
 os.makedirs(VECTOR_PATH, exist_ok=True)
 
@@ -44,13 +51,16 @@ else:
     data_files = os.listdir(DATA_PATH)
     print("Files in data folder:", data_files)
 
-# OpenAI APIキー
+# OpenAI APIキー設定（Streamlit Secretsから取得）
 openai.api_key = st.secrets.get("OPENAI_API_KEY")
+if not openai.api_key:
+    st.warning("OpenAI APIキーが設定されていません。")
 
-# 日本語フォント設定
+# 日本語フォント設定（Matplotlib）
 from matplotlib import rcParams
 rcParams['font.family'] = 'MS Gothic'
 sns.set(font='MS Gothic')
+
 
 # -----------------------
 # ベクトルストア作成
@@ -176,13 +186,18 @@ def refine_text_with_gpt(original_text, instruction):
     except Exception as e:
         st.error(f"RAG修正に失敗しました: {e}")
         return original_text
-
 # -----------------------
-# 総括生成関数（RAG対応・安全版）
+# 総括生成関数（RAG対応・安全版・例外対応済み）
 # -----------------------
 from langchain.chat_models import ChatOpenAI
 from langchain.schema import HumanMessage
 import streamlit as st
+
+# OpenAI エラーを安全に捕捉
+try:
+    from openai.error import OpenAIError
+except ImportError:
+    OpenAIError = Exception  # 万一古いバージョンなら汎用 Exception にフォールバック
 
 def generate_summary_block(latest_blocks):
     """
@@ -227,10 +242,14 @@ def generate_summary_block(latest_blocks):
         # generations[0] は list になっているので [0].text で取得
         summary = response.generations[0][0].text.strip()
         return summary
-    except Exception as e:
-        st.error(f"総括生成に失敗しました: {e}")
+
+    except OpenAIError as e:
+        st.error(f"総括生成に失敗しました(OpenAIエラー): {e}")
         return "総括の自動生成に失敗しました。"
 
+    except Exception as e:
+        st.error(f"総括生成に失敗しました(その他エラー): {e}")
+        return "総括の自動生成に失敗しました。"
 
 # -----------------------
 # PPT用フォント設定関数
@@ -672,6 +691,7 @@ if st.button("ブロック修正＆再生成"):
                     f,
                     file_name=os.path.basename(ppt_file)
                 )
+
 
 
 
