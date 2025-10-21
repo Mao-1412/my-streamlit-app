@@ -206,7 +206,6 @@ def generate_summary_block(latest_blocks):
         latest_blocks.get("【在庫管理】", "")
     ])
     
-    # すべて空の場合は処理不要
     if not any([latest_blocks.get(k) for k in ["【販売数量分析】","【商品提案】","【在庫管理】"]]):
         return "総括内容がありません。"
 
@@ -233,15 +232,14 @@ def generate_summary_block(latest_blocks):
 
     try:
         llm = ChatOpenAI(model_name="gpt-4o-mini", temperature=0)
-        # v0系では generate() が LLMResult を返す
         response = llm.generate([[HumanMessage(content=prompt)]])
         summary = response.generations[0][0].text.strip()
         return summary
 
     except Exception as e:
-        # OpenAIError も含めてすべてここで捕捉
         st.error(f"総括生成に失敗しました: {e}")
         return "総括の自動生成に失敗しました。"
+
 
 
 # -----------------------
@@ -684,6 +682,7 @@ if st.button("ブロック修正＆再生成"):
                     f,
                     file_name=os.path.basename(ppt_file)
                 )
+
 
 
 
