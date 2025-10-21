@@ -518,6 +518,7 @@ if st.button("ブロック修正＆再生成"):
             # ⑤ PPTを再生成
             ppt_file = generate_ppt(client_name, client_id)
             st.session_state['ppt_file'] = ppt_file
-            st.success(f"修正後のPPTを再生成しました: {ppt_file}")
+
+            st.success(f"{block_to_fix} ブロックを修正し、PPTを再生成しました。")
             with open(ppt_file, "rb") as f:
                 st.download_button("修正版PPTをダウンロード", f, file_name=os.path.basename(ppt_file))
