@@ -15,10 +15,6 @@ import streamlit as st
 
 # OpenAI
 import openai
-
-# OpenAI API エラーを安全に捕捉（互換対応版）
-OpenAIError = Exception
-
 # --- LangChain v0 系対応 ---
 from langchain.embeddings import OpenAIEmbeddings      # v0 系では embeddings モジュール
 from langchain.text_splitter import CharacterTextSplitter
@@ -232,10 +228,10 @@ def generate_summary_block(latest_blocks):
         response = llm.generate([[HumanMessage(content=prompt)]])
         summary = response.generations[0][0].text.strip()
         return summary
-
     except Exception as e:
         st.error(f"総括生成に失敗しました: {e}")
         return "総括の自動生成に失敗しました。"
+
 
 
 
@@ -679,6 +675,7 @@ if st.button("ブロック修正＆再生成"):
                     f,
                     file_name=os.path.basename(ppt_file)
                 )
+
 
 
 
