@@ -15,6 +15,7 @@ import streamlit as st
 
 # OpenAI
 import openai
+
 # --- LangChain v0 系対応 ---
 from langchain.embeddings import OpenAIEmbeddings      # v0 系では embeddings モジュール
 from langchain.text_splitter import CharacterTextSplitter
@@ -22,11 +23,23 @@ from langchain.schema import Document                  # v0 系では schema モ
 from langchain.vectorstores import FAISS
 from langchain.chat_models import ChatOpenAI          # GPT呼び出し用
 
-# Streamlit キャッシュをクリア（必要に応じて）
+# ======================
+# 古いサンプル互換用: OpenAIError がない場合は Exception で代用
+# ======================
+try:
+    from openai.error import OpenAIError
+except ImportError:
+    OpenAIError = Exception  # これで except OpenAIError: を安全に使用可能
+
+# ======================
+# Streamlit キャッシュクリア（必要に応じて）
+# ======================
 st.cache_data.clear()
 st.cache_resource.clear()
 
+# ======================
 # BASE_PATH設定（Cloud/ローカル共通）
+# ======================
 BASE_PATH = "."
 DATA_PATH = os.path.join(BASE_PATH, "data")
 OUTPUT_PATH = os.path.join(BASE_PATH, "output")
@@ -44,15 +57,20 @@ else:
     data_files = os.listdir(DATA_PATH)
     print("Files in data folder:", data_files)
 
+# ======================
 # OpenAI APIキー設定（Streamlit Secretsから取得）
+# ======================
 openai.api_key = st.secrets.get("OPENAI_API_KEY")
 if not openai.api_key:
     st.warning("OpenAI APIキーが設定されていません。")
 
+# ======================
 # 日本語フォント設定（Matplotlib）
+# ======================
 from matplotlib import rcParams
 rcParams['font.family'] = 'MS Gothic'
 sns.set(font='MS Gothic')
+
 
 
 # -----------------------
@@ -675,6 +693,7 @@ if st.button("ブロック修正＆再生成"):
                     f,
                     file_name=os.path.basename(ppt_file)
                 )
+
 
 
 
