@@ -272,7 +272,7 @@ def generate_gpt_proposal(client_name):
     4. 今後の成長方向性
     """
     try:
-        response = openai.chat.completions.create(
+        response = openai.ChatCompletion.create(
             model="gpt-4o-mini",
             messages=[{"role": "user", "content": prompt}],
         )
@@ -679,6 +679,7 @@ if st.button("ブロック修正＆再生成"):
                     f,
                     file_name=os.path.basename(ppt_file)
                 )
+
 
 
 
