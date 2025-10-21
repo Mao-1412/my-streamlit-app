@@ -1,10 +1,11 @@
+# Streamlit Cloud 用 最適化版
+streamlit>=1.28.0
+openai>=1.0.0
 langchain>=1.0.0
 faiss-cpu>=1.7.4
-openai>=1.0.0
 python-pptx>=0.6.21
 matplotlib
 seaborn
 pandas
 numpy
-streamlit>=1.28.0
 openpyxl
