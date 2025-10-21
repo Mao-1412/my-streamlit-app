@@ -291,10 +291,9 @@ def generate_gpt_proposal(client_name):
             messages=[{"role": "user", "content": prompt}],
         )
         return response.choices[0].message.content.strip()
-    except Exception as e:
+    except Exception as e:  # ← OpenAIError ではなく Exception
         st.error(f"提案文生成に失敗しました: {e}")
         return "提案文の自動生成に失敗しました。"
-
 
 # -----------------------
 # セッション初期化
@@ -693,6 +692,7 @@ if st.button("ブロック修正＆再生成"):
                     f,
                     file_name=os.path.basename(ppt_file)
                 )
+
 
 
 
