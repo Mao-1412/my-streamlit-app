@@ -515,19 +515,9 @@ if st.button("ブロック修正＆再生成"):
             latest_blocks = {**st.session_state.get('auto_generated_text', {}), **st.session_state.get('proposal_blocks', {})}
             st.session_state['proposal_blocks']["【総括】"] = generate_summary_block(latest_blocks)
 
-            # ⑤ PPT生成時に proposal_blocks と auto_generated_text を統合して使用
-            ppt_file = generate_ppt(client_name, client_id, proposal_text=None)
+            # ⑤ PPTを再生成
+            ppt_file = generate_ppt(client_name, client_id)
             st.session_state['ppt_file'] = ppt_file
-
-            st.success("修正版PPTを生成しました。")
-            
-            # 不要な「修正後の文章:」を削除して表示
-            clean_text = re.sub(r'^修正後の文章:\s*', '', refined_text)
-            st.text_area("修正版ブロック文章", clean_text, height=300)
-            
+            st.success(f"修正後のPPTを再生成しました: {ppt_file}")
             with open(ppt_file, "rb") as f:
-                st.download_button(
-                    "修正版PPTをダウンロード",
-                    f,
-                    file_name=os.path.basename(ppt_file)
-                )
+                st.download_button("修正版PPTをダウンロード", f, file_name=os.path.basename(ppt_file))
