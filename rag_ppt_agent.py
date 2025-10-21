@@ -166,31 +166,46 @@ def build_vectorstore():
 # -----------------------
 # GPT修正関数（RAG対応）
 # -----------------------
-def refine_text_with_gpt(original_text, instruction):
-    retriever = vectorstore.as_retriever(search_kwargs={"k": 3})
-    related_docs = retriever.get_relevant_documents(instruction)
-    context_text = "\n".join([d.page_content[:500] for d in related_docs])
-
-    prompt = f"""
-    以下の関連データを参考に、次の文章を指示に従って修正してください。
-
-    【関連データ】
-    {context_text}
-
-    【修正対象文章】
-    {original_text}
-
-    【修正指示】
-    {instruction}
+def refine_text_with_gpt(current_text, instruction):
     """
-
+    指定された文章をGPTで修正
+    """
     try:
-        llm = ChatOpenAI(model="gpt-4o-mini", temperature=0)
-        response = llm.invoke([HumanMessage(content=prompt)])
-        return response.content.strip()
+        # --- RAG対応（vectorstore がある場合のみ） ---
+        context_text = ""
+        if "vectorstore" in globals() and vectorstore is not None:
+            try:
+                retriever = vectorstore.as_retriever(search_kwargs={"k": 3})
+                related_docs = retriever.get_relevant_documents(instruction)
+                context_text = "\n".join([d.page_content[:500] for d in related_docs])
+            except Exception as e:
+                st.warning(f"RAG検索に失敗しました: {e}")
+        else:
+            context_text = ""
+
+        prompt = f"""
+        以下の文章を、指示に従って自然な日本語に修正してください。
+        必要であれば関連データも参考にしてください。
+
+        【修正指示】
+        {instruction}
+
+        【関連データ】
+        {context_text}
+
+        【修正対象】
+        {current_text}
+        """
+
+        llm = ChatOpenAI(model_name="gpt-4o-mini", temperature=0)
+        response = llm.generate([[HumanMessage(content=prompt)]])
+        refined_text = response.generations[0][0].text.strip()
+        return refined_text
+
     except Exception as e:
-        st.error(f"RAG修正に失敗しました: {e}")
-        return original_text
+        st.error(f"文章修正中にエラーが発生しました: {e}")
+        return current_text
+
 # -----------------------
 # 総括生成関数（RAG対応・無料版対応）
 # -----------------------
@@ -678,6 +693,7 @@ if st.button("ブロック修正＆再生成"):
                     f,
                     file_name=os.path.basename(ppt_file)
                 )
+
 
 
 
