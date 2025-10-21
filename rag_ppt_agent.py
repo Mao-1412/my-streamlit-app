@@ -15,7 +15,12 @@ import streamlit as st
 
 # OpenAI
 import openai
-from openai.error import OpenAIError   # ← 修正ポイント: 正しい例外クラス
+
+# OpenAI API エラーを安全に捕捉（互換対応版）
+try:
+    from openai.error import OpenAIError
+except ImportError:
+    OpenAIError = Exception  # 古い環境でも安全に動作
 
 # --- LangChain v0 系対応 ---
 from langchain.embeddings import OpenAIEmbeddings      # v0 系では embeddings モジュール
@@ -677,6 +682,7 @@ if st.button("ブロック修正＆再生成"):
                     f,
                     file_name=os.path.basename(ppt_file)
                 )
+
 
 
 
