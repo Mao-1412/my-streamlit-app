@@ -211,14 +211,14 @@ def generate_summary_block(latest_blocks):
     {text_to_summarize}
     """
 
-try:
-    llm = ChatOpenAI(model_name="gpt-4o-mini", temperature=0)
-    from langchain.schema import HumanMessage
-    response = llm.generate([[HumanMessage(content=prompt)]])
-    return response.generations[0][0].text.strip()
-except Exception as e:
-    st.error(f"総括生成に失敗しました: {e}")
-    return "総括の自動生成に失敗しました。"
+    try:
+        llm = ChatOpenAI(model_name="gpt-4o-mini", temperature=0)
+        from langchain.schema import HumanMessage
+        response = llm.generate([[HumanMessage(content=prompt)]])
+        return response.generations[0][0].text.strip()
+    except Exception as e:
+        st.error(f"総括生成に失敗しました: {e}")
+        return "総括の自動生成に失敗しました。"
 
 
 # -----------------------
@@ -661,6 +661,7 @@ if st.button("ブロック修正＆再生成"):
                     f,
                     file_name=os.path.basename(ppt_file)
                 )
+
 
 
 
