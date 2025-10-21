@@ -15,9 +15,7 @@ import streamlit as st
 
 # OpenAI
 import openai
-
-# OpenAI API エラーを安全に捕捉
-OpenAIError = getattr(openai, "OpenAIError", Exception)
+from openai.error import OpenAIError   # ← 修正ポイント: 正しい例外クラス
 
 # --- LangChain v0 系対応 ---
 from langchain.embeddings import OpenAIEmbeddings      # v0 系では embeddings モジュール
@@ -679,6 +677,7 @@ if st.button("ブロック修正＆再生成"):
                     f,
                     file_name=os.path.basename(ppt_file)
                 )
+
 
 
 
