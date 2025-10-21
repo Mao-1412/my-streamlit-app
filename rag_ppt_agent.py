@@ -196,42 +196,31 @@ def refine_text_with_gpt(original_text, instruction):
 # -----------------------
 from langchain.chat_models import ChatOpenAI
 from langchain.schema import HumanMessage
-import streamlit as st
 
 def generate_summary_block(latest_blocks):
     """
-    最新ブロックを統合して総括文を生成
+    最新ブロックを統合して150字程度で総括文を生成
     latest_blocks: dict
         各ブロック文章を保持する辞書
     """
-    # 要約対象の文章を結合
-    text_to_summarize = "\n\n".join([
+    # 対象ブロックを取得
+    target_blocks = [
         latest_blocks.get("【販売数量分析】", ""),
         latest_blocks.get("【商品提案】", ""),
         latest_blocks.get("【在庫管理】", "")
-    ])
-    
-    if not any([latest_blocks.get(k) for k in ["【販売数量分析】","【商品提案】","【在庫管理】"]]):
+    ]
+
+    # 内容がない場合はスキップ
+    if not any(target_blocks):
         return "総括内容がありません。"
 
-    # vectorstore があれば RAG も活用
-    context_text = ""
-    if 'vectorstore' in globals() and vectorstore is not None:
-        try:
-            retriever = vectorstore.as_retriever(search_kwargs={"k": 3})
-            related_docs = retriever.get_relevant_documents("営業提案の総括生成")
-            context_text = "\n".join([d.page_content[:500] for d in related_docs])
-        except Exception as e:
-            st.warning(f"RAG検索に失敗しました: {e}")
-            context_text = ""
+    # テキストを結合
+    text_to_summarize = "\n".join([b for b in target_blocks if b])
 
+    # プロンプト作成
     prompt = f"""
-    以下の関連データを踏まえて、次の内容を200字程度で営業提案用の総括文にまとめてください。
+    以下の文章を参考に、営業提案用に150字程度で簡潔に総括してください。
 
-    【関連データ】
-    {context_text}
-
-    【要約対象】
     {text_to_summarize}
     """
 
@@ -241,8 +230,11 @@ def generate_summary_block(latest_blocks):
         summary = response.generations[0][0].text.strip()
         return summary
     except Exception as e:
+        # OpenAIError ではなく Exception
+        import streamlit as st
         st.error(f"総括生成に失敗しました: {e}")
         return "総括の自動生成に失敗しました。"
+
 
 
 
@@ -686,6 +678,7 @@ if st.button("ブロック修正＆再生成"):
                     f,
                     file_name=os.path.basename(ppt_file)
                 )
+
 
 
 
