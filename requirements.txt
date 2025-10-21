@@ -1,12 +1,8 @@
-import os
-import re
-import textwrap
-import pandas as pd
-import matplotlib.pyplot as plt
-import seaborn as sns
-from pptx import Presentation
-from pptx.util import Inches, Pt
-from pptx.dml.color import RGBColor
-from io import BytesIO
-import streamlit as st
-import openai
+# Streamlitアプリ用最小必要ライブラリ
+streamlit>=1.25
+pandas>=2.0
+openai>=1.0
+matplotlib>=3.7
+seaborn>=0.12
+python-pptx>=0.6
+xlsxwriter>=3.1
