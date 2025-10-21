@@ -23,13 +23,7 @@ from langchain.schema import Document                  # v0 系では schema モ
 from langchain.vectorstores import FAISS
 from langchain.chat_models import ChatOpenAI          # GPT呼び出し用
 
-# ======================
-# 古いサンプル互換用: OpenAIError がない場合は Exception で代用
-# ======================
-try:
-    from openai.error import OpenAIError
-except ImportError:
-    OpenAIError = Exception  # これで except OpenAIError: を安全に使用可能
+
 
 # ======================
 # Streamlit キャッシュクリア（必要に応じて）
@@ -692,6 +686,7 @@ if st.button("ブロック修正＆再生成"):
                     f,
                     file_name=os.path.basename(ppt_file)
                 )
+
 
 
 
