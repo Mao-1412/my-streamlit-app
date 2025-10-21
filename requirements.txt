@@ -1,5 +1,5 @@
 streamlit>=1.28.0
-openai>=1.0.0
+openai==0.27.8
 langchain==0.0.301   # v0 系で無料版対応
 faiss-cpu>=1.7.4
 python-pptx>=0.6.21
@@ -8,3 +8,4 @@ seaborn
 pandas
 numpy
 openpyxl
+
